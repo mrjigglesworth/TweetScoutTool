@@ -34,12 +34,16 @@ public class AnalyzerService
             // Perform gem analysis based on the data
             if (stats.FollowersCount > 1000 && stats.InfluencersCount >= 10)
             {
-                Console.WriteLine($"Account @{username} qualifies as a potential gem.");
-                response =  new AnalyzeTwitterAccountStatsResponse
+                string score = GetScore(username).Result.Score;
+                if(Convert.ToInt32(score) > 400)
                 {
-                    IsGem = true,
-                    TweetScoutScore = GetScore(username).Result.Score
-                };
+                    Console.WriteLine($"Account @{username} qualifies as a potential gem.");
+                    response = new AnalyzeTwitterAccountStatsResponse
+                    {
+                        IsGem = true,
+                        TweetScoutScore = GetScore(username).Result.Score
+                    };
+                }
             }
         }
         catch (Exception ex)

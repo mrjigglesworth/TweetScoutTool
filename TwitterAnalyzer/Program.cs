@@ -46,7 +46,9 @@ public class Program
                                                 { "JobID", token.JobID },
                                                 { "Name", token.Name },
                                                 { "TweetScoutScore", response.TweetScoutScore != null ? response.TweetScoutScore : string.Empty },
-                                                { "Status", new[] { "Waiting Dexscreener" } }
+                                                { "TweetScoutDateChecked", DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss") },
+                                                { "Status", new[] { "Waiting Dexscreener" } },
+                                                { "Symbol", token.Symbol }
                                             });
 
                                             await AirtableService.UpdateRecordStatus("PumpFunTokens", token.JobID, new[] { "Prospect Identified" }, token.Symbol);
