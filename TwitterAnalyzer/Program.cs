@@ -5,7 +5,7 @@ using TwitterAnalyzer.Utilities;
 
 public class Program
 {
-    private static readonly string tweetScoutApiKey = "be06ed56-7697-45fc-a2a4-9531d2de0999";
+    private static readonly string tweetScoutApiKey = "";
 
     public static async Task Main(string[] args)
     {
