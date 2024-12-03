@@ -51,6 +51,11 @@ public class AnalyzerService
         catch (Exception ex)
         {
             Console.WriteLine($"Error: {ex.Message}");
+            return new AnalyzeTwitterAccountStatsResponse
+            {
+                IsGem=false,
+                TweetScoutScore = "0"
+            };
         }
 
         return response;

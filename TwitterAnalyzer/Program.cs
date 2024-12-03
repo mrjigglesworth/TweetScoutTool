@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata;
-using TwitterAnalyzer;
+﻿using TwitterAnalyzer;
 using TwitterAnalyzer.Models;
 using TwitterAnalyzer.Utilities;
 
@@ -9,7 +8,7 @@ public class Program
 
     public static async Task Main(string[] args)
     {
-        args = ["GETNEWCOINS"];
+        args = new string[] { "GETNEWCOINS" };
         if (args[0] == "GETNEWCOINS")
         {
             if (args[0] == "GETNEWCOINS")
@@ -19,7 +18,8 @@ public class Program
                 {
                     string coinName = pump.Name;
                     string symbol = pump.Symbol;
-                    if (pump.Status != null && pump.Status.Replace("]", string.Empty).Replace("[", string.Empty).Replace("\"", string.Empty) == "Low Risk Identified")
+                    string status = pump.Status.Replace("]", string.Empty).Replace("[", string.Empty).Replace("\"", string.Empty);
+                    if (pump.Status != null && status == "Low Risk Identified" || status == "Tweetscout Processing")
                     {
                         await AirtableService.UpdateRecordStatusForNewTokens("PumpFunNewTokens", new[] { "Processing", "Tweetscout Processing" }, symbol);
                         string contractAddress = pump.Mint;
@@ -37,8 +37,11 @@ public class Program
                             AnalyzerService analyzerService = new AnalyzerService(tweetScoutApiKey);
                             string twitterUrl = await analyzerService.GetTwitterAccountUrlFromIpfs(pump.Uri);
                             string cleanedHandle = Utilities.ExtractTwitterHandleFromEndOfUrl(twitterUrl);
-                            Console.WriteLine($"Analyzing Twitter handle: {cleanedHandle}");
+                            string[] parts = cleanedHandle.Split('/');
+                            if (parts.Length > 0)
+                                cleanedHandle = parts[0];
 
+                            Console.WriteLine($"Analyzing Twitter handle: {cleanedHandle}");
                             if (!string.IsNullOrEmpty(cleanedHandle))
                             {
                                 var response = await analyzerService.AnalyzeTwitterAccountStats(cleanedHandle);
