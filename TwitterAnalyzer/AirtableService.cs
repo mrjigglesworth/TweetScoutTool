@@ -7,9 +7,37 @@ namespace TwitterAnalyzer
     {
         private static readonly string airtableApiKey = "patqtbUoOEHJ2ZqX2.64c5794ec2f6d20e65c8667290e70f445eb0f70676ebb256391d9045b6ebc1a0";
         private static readonly string airtableBaseId = "appmbM11KReO4FJfW"; // JP_Project_Work
-        private static readonly string airtableTableName = "PumpFunTokens";
 
-        // Fetch data from Airtable
+        public static async Task<List<PumpFunNewTokenData>> FetchAirtableDataForPumpFunNewTokens()
+        {
+            List<PumpFunNewTokenData> tokens = new List<PumpFunNewTokenData>();
+
+            using (AirtableBase airtableBase = new AirtableBase(airtableApiKey, airtableBaseId))
+            {
+                string filterFormula = "FIND('Low Risk Identified', {Status}) > 0";
+                AirtableListRecordsResponse response = await airtableBase.ListRecords("PumpFunNewTokens", filterByFormula: filterFormula);
+
+                if (response.Success)
+                {
+                    tokens = response.Records
+                        .Select(record => new PumpFunNewTokenData
+                        {
+                            Symbol = record.GetField("Symbol")?.ToString(),
+                            Name = record.GetField("Name")?.ToString(),
+                            Uri = record.GetField("Uri")?.ToString(),
+                            Status = record.GetField("Status")?.ToString(),
+                            Mint = record.GetField("Mint")?.ToString()
+                        })
+                        .ToList();
+                }
+                else
+                {
+                    Console.WriteLine("Error fetching data from PumpFunNewTokens Airtable.");
+                }
+            }
+
+            return tokens;
+        }
         public static async Task<List<PumpFunTokenData>> FetchAirtableData()
         {
             List<PumpFunTokenData> tokens = new List<PumpFunTokenData>();
@@ -91,28 +119,6 @@ namespace TwitterAnalyzer
                 }
             }
         }
-
-        //public static async Task InsertIntoAirtable(string tableName, Dictionary<string, object> fields)
-        //{
-        //    using (AirtableBase airtableBase = new AirtableBase(airtableApiKey, airtableBaseId))
-        //    {
-        //        Fields fieldsToInsert = new Fields();
-        //        fieldsToInsert.FieldsCollection = fields;
-
-        //        // Add the record
-        //        AirtableCreateUpdateReplaceRecordResponse createResponse = await airtableBase.CreateRecord(tableName, fieldsToInsert);
-
-        //        if (createResponse.Success)
-        //        {
-        //            Console.WriteLine($"Successfully inserted record into table '{tableName}' with ID: {createResponse.Record.Id}");
-        //        }
-        //        else
-        //        {
-        //            Console.WriteLine($"Failed to insert record. Error: {createResponse.AirtableApiError?.ErrorMessage}");
-        //        }
-        //    }
-        //}
-
         public static async Task UpdateRecordStatus(string tableName, string jobId, string[] newStatus, string symbol)
         {
             using (AirtableBase airtableBase = new AirtableBase(airtableApiKey, airtableBaseId))
@@ -152,5 +158,62 @@ namespace TwitterAnalyzer
                 }
             }
         }
+        public static async Task UpdateRecordStatusForNewTokens(string tableName, string[] newStatus, string? symbol)
+        {
+            try
+            {
+                using (AirtableBase airtableBase = new AirtableBase(airtableApiKey, airtableBaseId))
+                {
+                    // Step 1: Retrieve the record with the matching JobID
+                    string filterFormula = $"{{Symbol}}='{symbol}'";
+                    AirtableListRecordsResponse listResponse = await airtableBase.ListRecords(tableName, filterByFormula: filterFormula);
+
+                    if (listResponse == null || !listResponse.Success)
+                    {
+                        Console.WriteLine($"No records found with Symbol: {symbol}");
+                        return;
+                    }
+
+                    // Step 2: Update the record
+                    if (listResponse != null)
+                    {
+                        if (listResponse.Records.Any())
+                        {
+                            string? recordId = listResponse?.Records?.First().Id;
+                            Fields fields = new Fields { };
+                            fields.AddField("Status", newStatus);
+
+                            if (!string.IsNullOrEmpty(recordId))
+                            {
+                                var updateResponse = await airtableBase.UpdateRecord(tableName, fields, recordId);
+
+                                if (updateResponse.Success)
+                                {
+                                    Console.WriteLine($"Successfully updated {tableName} - Status for Symbol: {symbol} to '{newStatus[0]}'.");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Failed to update record. Error: {updateResponse.AirtableApiError?.ErrorMessage}");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"No existing record found. Did NOT {tableName} - Status for Symbol: {symbol} to '{newStatus[0]}'.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"No existing record found. Did NOT update {tableName} - Status for Symbol: {symbol} to '{newStatus[0]}'.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Write(ex.ToString());
+                throw;
+            }
+        }
+
     }
 }

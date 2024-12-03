@@ -1,4 +1,6 @@
 ﻿using Newtonsoft.Json;
+using System.Text.Json;
+using System;
 using TwitterAnalyzer.Models;
 
 public class AnalyzerService
@@ -35,7 +37,7 @@ public class AnalyzerService
             if (stats.FollowersCount > 1000 && stats.InfluencersCount >= 10)
             {
                 string score = GetScore(username).Result.Score;
-                if(Convert.ToInt32(score) > 400)
+                if(Convert.ToDecimal(score) > Convert.ToDecimal(200.00))
                 {
                     Console.WriteLine($"Account @{username} qualifies as a potential gem.");
                     response = new AnalyzeTwitterAccountStatsResponse
@@ -54,6 +56,43 @@ public class AnalyzerService
         return response;
     }
     
+    public async Task<string> GetTwitterAccountUrlFromIpfs(string ipfsUri)
+    {
+        using HttpClient client = new HttpClient();
+        try
+        {
+            // Fetch the JSON content from the URL
+            string jsonContent = await client.GetStringAsync(ipfsUri);
+
+            // Parse the JSON content
+            using JsonDocument document = JsonDocument.Parse(jsonContent);
+            JsonElement root = document.RootElement;
+
+            // Check if the "twitter" field exists and retrieve its value
+            if (root.TryGetProperty("twitter", out JsonElement twitterElement))
+            {
+                string twitterUrl = twitterElement.GetString();
+                Console.WriteLine($"Twitter URL: {twitterUrl}");
+                return twitterUrl;
+            }
+            else
+            {
+                Console.WriteLine("The 'twitter' field does not exist in the JSON data.");
+                return string.Empty;
+            }
+        }
+        catch (HttpRequestException e)
+        {
+            Console.WriteLine($"Request error: {e.Message}");
+            return string.Empty;
+        }
+        catch (System.Text.Json.JsonException e)
+        {
+            Console.WriteLine($"JSON parsing error: {e.Message}");
+            return string.Empty;
+        }
+    }
+
     private async Task<ScoreResponse> GetScore(string user)
     {
         var client = new HttpClient();
